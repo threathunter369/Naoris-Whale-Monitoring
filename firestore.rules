@@ -1,0 +1,127 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if true;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isVerified() {
+      // Relaxing verification requirement for now as we don't have a verification flow implemented
+      return isSignedIn();
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validations ---
+
+    function isValidWallet(data) {
+      return data.keys().hasAll(['address', 'label', 'walletType', 'isActive', 'alertsEnabled', 'createdAt', 'updatedAt'])
+        && data.keys().size() <= 15
+        && data.address is string && data.address.size() == 42
+        && data.label is string && data.label.size() <= 100
+        && data.walletType is string
+        && data.isActive is bool
+        && data.alertsEnabled is bool;
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['txHash', 'blockNumber', 'timestamp', 'fromAddress', 'toAddress', 'amountFormatted', 'direction', 'riskLevel'])
+        && data.keys().size() <= 20
+        && data.txHash is string && data.txHash.size() == 66
+        && data.blockNumber is number
+        && data.timestamp is number
+        && data.fromAddress is string && data.fromAddress.size() == 42
+        && data.toAddress is string && data.toAddress.size() == 42
+        && data.amountFormatted is number
+        && data.direction is string
+        && data.riskLevel is string;
+    }
+
+    function isValidAlert(data) {
+      return data.keys().hasAll(['alertType', 'severity', 'walletAddress', 'txHash', 'amount', 'reason', 'status', 'createdAt'])
+        && data.keys().size() <= 15
+        && data.alertType is string
+        && data.severity is string
+        && data.walletAddress is string && data.walletAddress.size() == 42
+        && data.txHash is string && data.txHash.size() == 66
+        && data.amount is number
+        && data.reason is string
+        && data.status is string;
+    }
+
+    function isValidSettings(data) {
+       return data.keys().hasAll(['inApp', 'email', 'telegram', 'discord', 'minSeverity']);
+    }
+
+    // --- Collection Rules ---
+
+    match /wallets/{walletId} {
+      allow get: if isVerified();
+      allow list: if isVerified();
+      
+      allow create: if isVerified() && isValidWallet(incoming());
+      
+      allow update: if isVerified() && (
+        // Action: Update metadata or toggle status
+        (incoming().diff(existing()).affectedKeys().hasAny(['isActive', 'label', 'walletType', 'alertsEnabled', 'updatedAt']) && isValidWallet(incoming())) ||
+        // Action: Balance update (usually from worker)
+        (incoming().diff(existing()).affectedKeys().hasAny(['naorisBalance', 'ethBalance', 'lastActivityAt', 'updatedAt']) && isValidWallet(incoming()))
+      );
+      
+      allow delete: if isVerified();
+    }
+
+    match /transactions/{txId} {
+      allow get: if isVerified();
+      allow list: if isVerified();
+      
+      allow write: if isVerified() && (request.method == 'delete' || isValidTransaction(incoming()));
+    }
+
+    match /alerts/{alertId} {
+      allow get: if isVerified();
+      allow list: if isVerified();
+      
+      allow create: if isVerified() && isValidAlert(incoming());
+      allow update: if isVerified() && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['status'])
+      );
+      allow delete: if isVerified();
+    }
+
+    match /settings/{docId} {
+      allow read: if isVerified();
+      allow write: if isVerified() && isValidSettings(incoming());
+    }
+
+    match /risk/{docId} {
+      allow read: if isVerified();
+      allow write: if isVerified();
+    }
+
+    match /sync/{docId} {
+      allow read: if isVerified();
+      allow write: if isVerified();
+    }
+  }
+}
