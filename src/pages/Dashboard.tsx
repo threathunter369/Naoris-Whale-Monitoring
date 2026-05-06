@@ -150,68 +150,70 @@ export default function Dashboard() {
         <StatCard label="Monitored Assets" value={`${formatNumber(totalBalance)} N`} icon={ShieldCheck} color="text-brand-primary" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Risk Score Card */}
-        <div className={cn("p-6 rounded-2xl border flex flex-col justify-between", getRiskBg(riskScore))}>
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        {/* Left Side: Risk Score (Col 1-3) */}
+        <div className={cn("xl:col-span-3 p-6 rounded-2xl border flex flex-col justify-between", getRiskBg(riskScore))}>
           <div>
-            <h3 className="font-semibold text-lg text-gray-300">Whale Risk Score</h3>
-            <p className="text-xs text-gray-500 mt-1">Composite market sentiment index</p>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-semibold text-lg text-gray-300">Risk Score</h3>
+              <div className="w-2 h-2 rounded-full bg-brand-primary animate-pulse" />
+            </div>
+            <p className="text-xs text-gray-500">Market Surveillance Index</p>
           </div>
           <div className="py-8 text-center">
-            <span className={cn("text-7xl font-black tracking-tighter", getRiskColor(riskScore))}>
+            <motion.span 
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className={cn("text-7xl font-black tracking-tighter block", getRiskColor(riskScore))}
+            >
               {riskScore}
-            </span>
-            <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/20 text-xs font-bold uppercase tracking-wider">
-              {riskScore >= 900 ? 'Low Risk' : riskScore >= 700 ? 'Moderate' : 'Critical'}
+            </motion.span>
+            <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 bg-black/40 rounded-full text-[10px] font-black uppercase tracking-widest text-white border border-white/5">
+              {riskScore >= 900 ? 'Secure' : riskScore >= 700 ? 'Observation' : 'High Risk'}
             </div>
           </div>
-          <div className="space-y-3">
-             <div className="flex justify-between text-[10px] font-bold uppercase text-gray-500">
+          <div className="space-y-4">
+             <div className="flex justify-between text-[10px] font-bold uppercase tracking-tighter text-gray-500">
                 <span>Network Integrity</span>
                 <span className="text-brand-primary">98.2%</span>
              </div>
              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                 <div className="h-full bg-brand-primary w-[98.2%]" />
              </div>
+             <p className="text-[10px] text-gray-500 italic text-center font-medium">Auto-scaling protection enabled</p>
           </div>
         </div>
 
-        {/* Professional Trading Chart */}
-        <div className="lg:col-span-3 bg-brand-card rounded-2xl border border-white/5 flex flex-col overflow-hidden">
+        {/* Center: Trading View (Chart + Order Book) (Col 4-9) */}
+        <div className="xl:col-span-6 bg-brand-card rounded-2xl border border-white/5 flex flex-col overflow-hidden">
           <div className="p-4 border-b border-white/5 flex justify-between items-center bg-black/20">
             <div className="flex items-center gap-4">
-              <h3 className="font-bold text-sm uppercase tracking-widest text-gray-400">NAORIS / USDT <span className="text-emerald-500 ml-2">Real-time</span></h3>
+              <h3 className="font-bold text-[10px] uppercase tracking-[0.2em] text-gray-400">MARKET TELEMETRY</h3>
               <div className="flex gap-1">
-                {['1m', '5m', '15m', '1h', '1D'].map(t => (
+                {['1m', '5m', '15m'].map(t => (
                   <button key={t} className={cn(
-                    "px-2 py-0.5 rounded text-[10px] font-bold transition-colors",
+                    "px-2 py-0.5 rounded text-[9px] font-bold transition-colors",
                     t === '1m' ? "bg-brand-primary text-black" : "text-gray-500 hover:bg-white/5"
                   )}>{t}</button>
                 ))}
               </div>
             </div>
-            <div className="flex gap-4 text-[10px] font-mono">
-              <span className="text-gray-500">O: <span className="text-white">{(market.candlesticks[market.candlesticks.length-1]?.open || 0).toFixed(4)}</span></span>
-              <span className="text-gray-500">H: <span className="text-white">{(market.candlesticks[market.candlesticks.length-1]?.high || 0).toFixed(4)}</span></span>
-              <span className="text-gray-500">L: <span className="text-white">{(market.candlesticks[market.candlesticks.length-1]?.low || 0).toFixed(4)}</span></span>
-              <span className="text-gray-500">C: <span className="text-white">{(market.candlesticks[market.candlesticks.length-1]?.close || 0).toFixed(4)}</span></span>
+            <div className="text-[10px] font-mono text-brand-primary font-bold">
+              {market.price.toFixed(4)} USDT
             </div>
           </div>
           
-          <div className="flex-1 flex min-h-[350px]">
+          <div className="flex-1 flex flex-col sm:flex-row min-h-[350px]">
             {/* Chart Area */}
-            <div className="flex-1 relative p-4 bg-black/40">
+            <div className="flex-1 relative p-4 bg-black/40 border-r border-white/5">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={market.candlesticks}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-                  <XAxis 
-                    dataKey="time" 
-                    hide 
-                  />
+                  <XAxis dataKey="time" hide />
                   <YAxis 
                     domain={['auto', 'auto']} 
                     orientation="right" 
-                    tick={{ fontSize: 10, fill: '#666' }} 
+                    tick={{ fontSize: 9, fill: '#444' }} 
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={(val) => val.toFixed(4)}
@@ -221,9 +223,8 @@ export default function Dashboard() {
                       if (active && payload && payload.length) {
                         const d = payload[0].payload;
                         return (
-                          <div className="bg-[#111] border border-white/10 p-2 rounded shadow-xl text-[10px] font-mono">
-                            <p className="text-gray-500 mb-1">{new Date(d.time).toLocaleTimeString()}</p>
-                            <p className="text-white">PRICE: {d.close.toFixed(4)}</p>
+                          <div className="bg-[#111] border border-white/10 p-2 rounded shadow-2xl text-[9px] font-mono">
+                            <p className="text-white">PRC: {d.close.toFixed(4)}</p>
                             <p className="text-brand-primary">VOL: {formatNumber(d.volume)}</p>
                           </div>
                         );
@@ -231,11 +232,6 @@ export default function Dashboard() {
                       return null;
                     }}
                   />
-                  <Bar dataKey="volume" yAxisId={1} fill="#ffffff05" barSize={10}>
-                    {market.candlesticks.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.close >= entry.open ? '#10b98120' : '#ef444420'} />
-                    ))}
-                  </Bar>
                   <Line 
                     type="monotone" 
                     dataKey="close" 
@@ -247,50 +243,95 @@ export default function Dashboard() {
                 </ComposedChart>
               </ResponsiveContainer>
               
-              {/* Overlay Price Label */}
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-brand-primary text-black px-2 py-1 rounded text-xs font-black shadow-lg">
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-brand-primary text-black px-1.5 py-0.5 rounded text-[10px] font-black shadow-lg">
                 {market.price.toFixed(4)}
               </div>
             </div>
 
-            {/* Simple Order Book Sidebar */}
-            <div className="w-48 border-l border-white/5 bg-black/20 flex flex-col pt-1">
-              <div className="px-3 py-1 flex justify-between text-[8px] font-bold text-gray-500 uppercase tracking-tighter border-b border-white/5 mb-1">
-                <span>Price (USDT)</span>
-                <span>Amount</span>
-              </div>
-              
-              {/* Asks */}
-              <div className="flex-1 flex flex-col-reverse overflow-hidden">
-                {market.orderBook.asks.slice(-12).map((ask, i) => (
-                  <div key={i} className="px-3 py-0.5 flex justify-between text-[9px] font-mono hover:bg-white/5 transition-colors relative group">
-                    <div className="absolute inset-y-0 right-0 bg-red-500/5 transition-all" style={{ width: `${Math.min(100, (ask.amount / 100))}%` }} />
-                    <span className="text-red-500 z-10">{ask.price.toFixed(4)}</span>
-                    <span className="text-gray-400 z-10">{ask.amount.toFixed(0)}</span>
+            {/* Simple Order Book Sidebar inside Center part */}
+            <div className="w-full sm:w-40 bg-black/20 flex flex-col overflow-hidden">
+               <div className="px-3 py-2 flex justify-between text-[8px] font-bold text-gray-500 uppercase border-b border-white/5">
+                 <span>Price</span>
+                 <span>Amt</span>
+               </div>
+               <div className="flex-1 flex flex-col gap-px p-1 overflow-hidden">
+                  {/* Small Subset of asks/bids */}
+                  <div className="flex flex-col-reverse">
+                    {market.orderBook.asks.slice(-5).map((ask, i) => (
+                      <div key={i} className="px-2 py-0.5 flex justify-between text-[9px] font-mono text-red-500/80">
+                        <span>{ask.price.toFixed(3)}</span>
+                        <span className="text-gray-600">{ask.amount.toFixed(0)}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-
-              {/* Spread */}
-              <div className="px-3 py-2 border-y border-white/5 bg-black/40">
-                <div className="flex justify-between items-center">
-                   <span className="text-base font-black text-emerald-500 leading-none">{market.price.toFixed(4)}</span>
-                </div>
-                <div className="text-[8px] text-gray-500 font-bold mt-1">≈ $0.13651</div>
-              </div>
-
-              {/* Bids */}
-              <div className="flex-1 overflow-hidden">
-                {market.orderBook.bids.slice(0, 12).map((bid, i) => (
-                   <div key={i} className="px-3 py-0.5 flex justify-between text-[9px] font-mono hover:bg-white/5 transition-colors relative group">
-                      <div className="absolute inset-y-0 right-0 bg-emerald-500/5 transition-all" style={{ width: `${Math.min(100, (bid.amount / 100))}%` }} />
-                      <span className="text-emerald-500 z-10">{bid.price.toFixed(4)}</span>
-                      <span className="text-gray-400 z-10">{bid.amount.toFixed(0)}</span>
-                   </div>
-                ))}
-              </div>
+                  <div className="h-px bg-white/5 my-1" />
+                  <div>
+                    {market.orderBook.bids.slice(0, 5).map((bid, i) => (
+                      <div key={i} className="px-2 py-0.5 flex justify-between text-[9px] font-mono text-emerald-500/80">
+                        <span>{bid.price.toFixed(3)}</span>
+                        <span className="text-gray-600">{bid.amount.toFixed(0)}</span>
+                      </div>
+                    ))}
+                  </div>
+               </div>
             </div>
           </div>
+        </div>
+
+        {/* Right Side: Protocol Hierarchy Panel (Col 10-12) */}
+        <div className="xl:col-span-3 bg-brand-card rounded-2xl border border-white/5 flex flex-col overflow-hidden">
+           <div className="p-4 border-b border-white/5 bg-black/20">
+             <h3 className="font-bold text-[10px] uppercase tracking-[0.2em] text-brand-primary flex items-center gap-2">
+               <ShieldCheck className="w-3 h-3" />
+               PROTOCOL HIERARCHY
+             </h3>
+           </div>
+           <div className="p-4 flex-1 flex flex-col gap-5">
+             <div className="relative group rounded-xl overflow-hidden border border-white/10 bg-[#050505] p-1">
+               <img 
+                 src="/naoris_token_control.png" 
+                 alt="Protocol Visualization" 
+                 className="w-full h-auto rounded-lg"
+                 onError={(e) => {
+                   const target = e.target as HTMLImageElement;
+                   target.src = 'https://placehold.co/400x500/0a0a0a/10b981?text=Awaiting+Image+Upload';
+                 }}
+               />
+               <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-[8px] font-black uppercase tracking-widest text-brand-primary">Full structural map loaded</span>
+               </div>
+             </div>
+             
+             <div className="space-y-4">
+               {[
+                 { label: "Treasury Multisig", val: "40.6%", color: "bg-blue-500" },
+                 { label: "Vesting Contract", val: "33.8%", color: "bg-purple-500" },
+                 { label: "Gnosis Proxy layer", val: "7.85%", color: "bg-emerald-500" }
+               ].map((item, i) => (
+                 <div key={i} className="space-y-2">
+                   <div className="flex justify-between text-[9px] font-bold uppercase tracking-tight text-gray-400">
+                     <span>{item.label}</span>
+                     <span className="text-white">{item.val}</span>
+                   </div>
+                   <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                     <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: item.val }}
+                        transition={{ duration: 1, delay: 0.2 * i }}
+                        className={cn("h-full", item.color)} 
+                     />
+                   </div>
+                 </div>
+               ))}
+             </div>
+             
+             <button 
+              onClick={() => navigate('/tokenomics')}
+              className="mt-2 w-full py-2.5 border border-white/5 bg-white/5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 hover:text-brand-primary hover:bg-white/10 transition-all"
+             >
+               Detailed Distribution Report
+             </button>
+           </div>
         </div>
       </div>
 

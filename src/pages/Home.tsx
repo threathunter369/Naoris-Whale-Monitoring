@@ -275,7 +275,7 @@ export default function Home() {
                 <div className="relative group">
                   <div className="absolute -inset-px bg-gradient-to-br from-brand-primary to-transparent opacity-20 group-hover:opacity-40 transition-opacity blur-sm rounded-3xl" />
                   <img 
-                    src="/naoris_token_control_structure.png" 
+                    src="/naoris_token_control.png" 
                     alt="NAORIS Token Control Structure" 
                     className="w-full h-auto rounded-3xl shadow-2xl relative z-10 hover:shadow-brand-primary/20 transition-all duration-700"
                     referrerPolicy="no-referrer"
