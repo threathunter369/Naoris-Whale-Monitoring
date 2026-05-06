@@ -11,6 +11,7 @@ import Wallets from './pages/Wallets';
 import Transactions from './pages/Transactions';
 import Alerts from './pages/Alerts';
 import Settings from './pages/Settings';
+import Tokenomics from './pages/Tokenomics';
 
 const router = createBrowserRouter([
   {
@@ -25,6 +26,7 @@ const router = createBrowserRouter([
       { path: 'wallets', element: <Wallets /> },
       { path: 'transactions', element: <Transactions /> },
       { path: 'alerts', element: <Alerts /> },
+      { path: 'tokenomics', element: <Tokenomics /> },
       { path: 'settings', element: <Settings /> },
     ],
   },

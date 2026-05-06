@@ -8,6 +8,7 @@ import {
   Settings, 
   Radar,
   CircleAlert,
+  Database,
   LogIn,
   LogOut,
   User
@@ -278,6 +279,7 @@ export default function Layout() {
           <NavItem to="/wallets" icon={Wallet} label="Wallets" />
           <NavItem to="/transactions" icon={ArrowLeftRight} label="Transactions" />
           <NavItem to="/alerts" icon={Bell} label="Alerts" />
+          <NavItem to="/tokenomics" icon={Database} label="Token Control" />
         </nav>
 
         <div className="px-4 py-6 border-t border-white/5 space-y-1">
