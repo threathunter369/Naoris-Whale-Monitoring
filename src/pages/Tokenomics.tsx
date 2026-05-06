@@ -82,10 +82,15 @@ export default function Tokenomics() {
                While centralized, the structured and professional setup provides transparency compared to unverified anonymous wallets.
              </p>
              <div className="pt-4">
-                <button className="flex items-center gap-2 text-[10px] font-bold text-brand-primary uppercase tracking-widest hover:underline">
+                <a 
+                  href="https://naorisprotocol.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 text-[10px] font-bold text-brand-primary uppercase tracking-widest hover:underline cursor-pointer"
+                >
                   <ExternalLink className="w-3 h-3" />
                   View Audit Documents
-                </button>
+                </a>
              </div>
           </div>
         </div>

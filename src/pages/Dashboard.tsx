@@ -3,6 +3,7 @@ import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, onSnapshot, query, orderBy, limit, where } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -153,9 +154,9 @@ export default function Dashboard() {
         <StatCard label="Monitored Assets" value={`${formatNumber(totalBalance)} N`} icon={ShieldCheck} color="text-brand-primary" />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-        {/* Left Side: Risk Score (Col 1-3) */}
-        <div className={cn("xl:col-span-3 p-6 rounded-2xl border flex flex-col justify-between", getRiskBg(riskScore))}>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Left Side: Risk Score */}
+        <div className={cn("xl:col-span-1 p-6 rounded-2xl border flex flex-col justify-between", getRiskBg(riskScore))}>
           <div>
             <div className="flex items-center justify-between mb-1">
               <h3 className="font-semibold text-lg text-gray-300">Risk Score</h3>
@@ -187,8 +188,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Center: Trading View (Chart + Order Book) (Col 4-9) */}
-        <div className="xl:col-span-6 bg-brand-card rounded-2xl border border-white/5 flex flex-col overflow-hidden">
+        {/* Center: Trading View (Chart + Order Book) */}
+        <div className="xl:col-span-2 bg-brand-card rounded-2xl border border-white/5 flex flex-col overflow-hidden">
           <div className="p-4 border-b border-white/5 flex justify-between items-center bg-black/20">
             <div className="flex items-center gap-4">
               <h3 className="font-bold text-[10px] uppercase tracking-[0.2em] text-gray-400">MARKET TELEMETRY</h3>
@@ -279,62 +280,6 @@ export default function Dashboard() {
                </div>
             </div>
           </div>
-        </div>
-
-        {/* Right Side: Protocol Hierarchy Panel (Col 10-12) */}
-        <div className="xl:col-span-3 bg-brand-card rounded-2xl border border-white/5 flex flex-col overflow-hidden">
-           <div className="p-4 border-b border-white/5 bg-black/20">
-             <h3 className="font-bold text-[10px] uppercase tracking-[0.2em] text-brand-primary flex items-center gap-2">
-               <ShieldCheck className="w-3 h-3" />
-               PROTOCOL HIERARCHY
-             </h3>
-           </div>
-           <div className="p-4 flex-1 flex flex-col gap-5">
-             <div className="relative group rounded-xl overflow-hidden border border-white/10 bg-[#050505] p-1">
-               <img 
-                 src="/naoris_token_control.png" 
-                 alt="Protocol Visualization" 
-                 className="w-full h-auto rounded-lg"
-                 onError={(e) => {
-                   const target = e.target as HTMLImageElement;
-                   target.src = 'https://placehold.co/400x500/0a0a0a/10b981?text=Awaiting+Image+Upload';
-                 }}
-               />
-               <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-[8px] font-black uppercase tracking-widest text-brand-primary">Full structural map loaded</span>
-               </div>
-             </div>
-             
-             <div className="space-y-4">
-               {[
-                 { label: "Treasury Multisig", val: "40.6%", color: "bg-blue-500" },
-                 { label: "Vesting Contract", val: "33.8%", color: "bg-purple-500" },
-                 { label: "Gnosis Proxy layer", val: "7.85%", color: "bg-emerald-500" }
-               ].map((item, i) => (
-                 <div key={i} className="space-y-2">
-                   <div className="flex justify-between text-[9px] font-bold uppercase tracking-tight text-gray-400">
-                     <span>{item.label}</span>
-                     <span className="text-white">{item.val}</span>
-                   </div>
-                   <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                     <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: item.val }}
-                        transition={{ duration: 1, delay: 0.2 * i }}
-                        className={cn("h-full", item.color)} 
-                     />
-                   </div>
-                 </div>
-               ))}
-             </div>
-             
-             <button 
-              onClick={() => navigate('/tokenomics')}
-              className="mt-2 w-full py-2.5 border border-white/5 bg-white/5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 hover:text-brand-primary hover:bg-white/10 transition-all"
-             >
-               Detailed Distribution Report
-             </button>
-           </div>
         </div>
       </div>
 

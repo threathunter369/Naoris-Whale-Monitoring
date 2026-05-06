@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
 import { 
   Bell, 
   Mail, 
@@ -10,13 +10,16 @@ import {
   Shield, 
   Save,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { AlertSeverity, NotificationSettings } from '../types';
+import { AlertSeverity } from '../types';
 import { cn } from '../lib/utils';
+import { motion, AnimatePresence } from 'motion/react';
 
 const settingsSchema = z.object({
   inApp: z.boolean(),
@@ -38,10 +41,13 @@ const settingsSchema = z.object({
 type SettingsForm = z.infer<typeof settingsSchema>;
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [settingsLoading, setSettingsLoading] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const { register, handleSubmit, reset, setValue, watch } = useForm<SettingsForm>({
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<SettingsForm>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       inApp: true,
@@ -53,36 +59,66 @@ export default function Settings() {
   });
 
   useEffect(() => {
+    if (authLoading) return;
+    
     if (!user) {
       setSettingsLoading(false);
+      setDataLoaded(true);
       return;
     }
 
+    // Fallback timeout to ensure the UI is not blocked indefinitely
+    const timeout = setTimeout(() => {
+      setSettingsLoading(false);
+      setDataLoaded(true);
+    }, 3500);
+
     const unsub = onSnapshot(doc(db, 'settings', user.uid), (snap) => {
+      clearTimeout(timeout);
       if (snap.exists()) {
         reset(snap.data() as SettingsForm);
       }
       setSettingsLoading(false);
+      setDataLoaded(true);
     }, (err) => {
+      clearTimeout(timeout);
       console.error("Settings snapshot error:", err);
-      handleFirestoreError(err, OperationType.GET, `settings/${user.uid}`);
+      // Ensure we stop loading state before throwing
       setSettingsLoading(false);
+      setDataLoaded(true);
+      handleFirestoreError(err, OperationType.GET, `settings/${user.uid}`);
     });
-    return unsub;
-  }, [reset, user]);
+    return () => {
+      unsub();
+      clearTimeout(timeout);
+    };
+  }, [reset, user, authLoading]);
 
   const onSubmit = async (data: SettingsForm) => {
     if (!user) return;
     setIsSaving(true);
+    setSaveSuccess(false);
+    setSaveError(null);
+
+    // Safety timeout for saving state
+    const saveTimeout = setTimeout(() => {
+      setIsSaving(false);
+      setSaveError("Synchronization is taking longer than expected. Please check your connection.");
+    }, 10000);
+
     try {
       await setDoc(doc(db, 'settings', user.uid), {
         ...data,
         userId: user.uid,
-        updatedAt: Date.now()
+        updatedAt: serverTimestamp()
       });
-      alert('Surveillance configuration updated and synced across all nodes.');
+      clearTimeout(saveTimeout);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
+      clearTimeout(saveTimeout);
       console.error("Save settings error:", err);
+      setSaveError("Failed to synchronize settings with security nodes.");
       handleFirestoreError(err, OperationType.WRITE, `settings/${user.uid}`);
     } finally {
       setIsSaving(false);
@@ -101,7 +137,7 @@ export default function Settings() {
     }
   };
 
-  if (settingsLoading) return (
+  if (authLoading || (settingsLoading && !dataLoaded)) return (
     <div className="flex flex-col items-center justify-center h-96 space-y-4">
       <RefreshCw className="w-12 h-12 animate-spin text-brand-primary" />
       <p className="text-gray-500 font-mono text-xs animate-pulse">RECONNAISSANCE IN PROGRESS...</p>
@@ -152,12 +188,21 @@ export default function Settings() {
                 <input type="checkbox" {...register('email.enabled')} className="w-5 h-5 accent-brand-primary" />
               </div>
               {watch('email.enabled') && (
-                <div className="pl-14">
+                <div className="pl-14 space-y-2">
                   <input 
                     {...register('email.recipient')}
                     placeholder="investigator@company.com"
-                    className="w-full max-w-md bg-black/40 border border-white/10 rounded-lg py-2 px-3 text-sm outline-none focus:border-brand-primary/50"
+                    className={cn(
+                      "w-full max-w-md bg-black/40 border rounded-lg py-2 px-3 text-sm outline-none transition-colors",
+                      errors.email?.recipient ? "border-red-500" : "border-white/10 focus:border-brand-primary/50"
+                    )}
                   />
+                  {errors.email?.recipient && (
+                    <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {errors.email.recipient.message || "Invalid Email Address"}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -177,12 +222,21 @@ export default function Settings() {
                 <input type="checkbox" {...register('telegram.enabled')} className="w-5 h-5 accent-brand-primary" />
               </div>
               {watch('telegram.enabled') && (
-                <div className="pl-14">
+                <div className="pl-14 space-y-2">
                   <input 
                     {...register('telegram.chatId')}
                     placeholder="Enter Chat ID"
-                    className="w-full max-w-md bg-black/40 border border-white/10 rounded-lg py-2 px-3 text-sm outline-none focus:border-brand-primary/50"
+                    className={cn(
+                      "w-full max-w-md bg-black/40 border rounded-lg py-2 px-3 text-sm outline-none transition-colors",
+                      errors.telegram?.chatId ? "border-red-500" : "border-white/10 focus:border-brand-primary/50"
+                    )}
                   />
+                  {errors.telegram?.chatId && (
+                    <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {errors.telegram.chatId.message || "Invalid Chat ID"}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -202,12 +256,21 @@ export default function Settings() {
                 <input type="checkbox" {...register('discord.enabled')} className="w-5 h-5 accent-brand-primary" />
               </div>
               {watch('discord.enabled') && (
-                <div className="pl-14">
+                <div className="pl-14 space-y-2">
                   <input 
                     {...register('discord.webhookUrl')}
                     placeholder="https://discord.com/api/webhooks/..."
-                    className="w-full bg-black/40 border border-white/10 rounded-lg py-2 px-3 text-sm outline-none focus:border-brand-primary/50"
+                    className={cn(
+                      "w-full bg-black/40 border rounded-lg py-2 px-3 text-sm outline-none transition-colors",
+                      errors.discord?.webhookUrl ? "border-red-500" : "border-white/10 focus:border-brand-primary/50"
+                    )}
                   />
+                  {errors.discord?.webhookUrl && (
+                    <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {errors.discord.webhookUrl.message || "Invalid Webhook URL"}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -245,22 +308,49 @@ export default function Settings() {
           </div>
         </section>
 
-        <div className="flex justify-end gap-3">
-          <button 
-            type="button"
-            onClick={handleReset}
-            className="px-6 py-3 bg-red-500/10 text-red-500 font-bold rounded-xl hover:bg-red-500/20 transition-all border border-red-500/10 flex items-center gap-2"
-          >
-            <Trash2 className="w-4 h-4" /> Reset Data
-          </button>
-          <button 
-            type="submit"
-            disabled={isSaving}
-            className="px-8 py-3 bg-brand-primary text-black font-black rounded-xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {isSaving ? 'Synching...' : 'Save Configuration'}
-          </button>
+        <div className="flex justify-end items-center gap-4">
+          <AnimatePresence>
+            {saveSuccess && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="flex items-center gap-2 text-brand-primary font-bold text-sm"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Synchronized with Mainnet</span>
+              </motion.div>
+            )}
+            {saveError && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="flex items-center gap-2 text-red-500 font-bold text-sm"
+              >
+                <AlertCircle className="w-4 h-4" />
+                <span>{saveError}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="flex gap-3">
+            <button 
+              type="button"
+              onClick={handleReset}
+              className="px-6 py-3 bg-red-500/10 text-red-500 font-bold rounded-xl hover:bg-red-500/20 transition-all border border-red-500/10 flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" /> Reset Data
+            </button>
+            <button 
+              type="submit"
+              disabled={isSaving}
+              className="px-8 py-3 bg-brand-primary text-black font-black rounded-xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {isSaving ? 'Synching...' : 'Save Configuration'}
+            </button>
+          </div>
         </div>
       </form>
     </div>
