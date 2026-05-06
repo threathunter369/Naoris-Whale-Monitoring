@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { collection, onSnapshot, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, auth } from '../lib/firebase';
+import { collection, onSnapshot, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -40,15 +40,23 @@ export default function Dashboard() {
   const [riskScore, setRiskScore] = useState(850); // Default placeholder
 
   useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) return;
+
     // Stats: Wallets
-    const unsubWallets = onSnapshot(collection(db, 'wallets'), (snap) => {
+    const unsubWallets = onSnapshot(query(collection(db, 'wallets'), where('userId', '==', user.uid)), (snap) => {
       setStats(prev => ({ ...prev, totalWallets: snap.size }));
       const total = snap.docs.reduce((acc, doc) => acc + (Number(doc.data().naorisBalance) || 0), 0);
       setTotalBalance(total);
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'wallets'));
 
     // Stats: Alerts
-    const unsubAlerts = onSnapshot(query(collection(db, 'alerts'), orderBy('createdAt', 'desc'), limit(50)), (snap) => {
+    const unsubAlerts = onSnapshot(query(
+      collection(db, 'alerts'), 
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc'), 
+      limit(50)
+    ), (snap) => {
       const alerts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Alert));
       setRecentAlerts(alerts.slice(0, 5));
       const activeCount = alerts.filter(a => a.status === 'New').length;
@@ -60,7 +68,12 @@ export default function Dashboard() {
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'alerts'));
 
     // Stats: Txs
-    const unsubTxs = onSnapshot(query(collection(db, 'transactions'), orderBy('timestamp', 'desc'), limit(100)), (snap) => {
+    const unsubTxs = onSnapshot(query(
+      collection(db, 'transactions'), 
+      where('userId', '==', user.uid),
+      orderBy('timestamp', 'desc'), 
+      limit(100)
+    ), (snap) => {
       const txs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
       setRecentTxs(txs.slice(0, 5));
       

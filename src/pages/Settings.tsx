@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType, auth } from '../lib/firebase';
 import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import { 
   Bell, 
@@ -51,27 +51,39 @@ export default function Settings() {
   });
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'settings', 'notifications'), (snap) => {
+    const user = auth.currentUser;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const unsub = onSnapshot(doc(db, 'settings', user.uid), (snap) => {
       if (snap.exists()) {
         reset(snap.data() as SettingsForm);
       }
       setLoading(false);
     }, (err) => {
       console.error("Settings snapshot error:", err);
-      handleFirestoreError(err, OperationType.GET, 'settings/notifications');
+      handleFirestoreError(err, OperationType.GET, `settings/${user.uid}`);
       setLoading(false);
     });
     return unsub;
   }, [reset]);
 
   const onSubmit = async (data: SettingsForm) => {
+    const user = auth.currentUser;
+    if (!user) return;
     setIsSaving(true);
     try {
-      await setDoc(doc(db, 'settings', 'notifications'), data);
+      await setDoc(doc(db, 'settings', user.uid), {
+        ...data,
+        userId: user.uid,
+        updatedAt: Date.now()
+      });
       alert('Surveillance configuration updated and synced across all nodes.');
     } catch (err) {
       console.error("Save settings error:", err);
-      handleFirestoreError(err, OperationType.WRITE, 'settings/notifications');
+      handleFirestoreError(err, OperationType.WRITE, `settings/${user.uid}`);
     } finally {
       setIsSaving(false);
     }

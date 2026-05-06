@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType, auth } from '../lib/firebase';
 import { 
   collection, 
   onSnapshot, 
@@ -29,7 +29,15 @@ export default function Transactions() {
   });
 
   useEffect(() => {
-    const unsub = onSnapshot(query(collection(db, 'transactions'), orderBy('timestamp', 'desc'), limit(50)), (snap) => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const unsub = onSnapshot(query(
+      collection(db, 'transactions'), 
+      where('userId', '==', user.uid),
+      orderBy('timestamp', 'desc'), 
+      limit(50)
+    ), (snap) => {
       const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
       setTransactions(data);
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'transactions'));

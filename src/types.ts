@@ -1,36 +1,44 @@
-export enum WalletType {
-  VESTING = 'Vesting Contract',
-  MULTISIG = 'Multisig Wallet',
-  GNOSIS = 'Gnosis Safe',
-  TREASURY = 'Treasury Wallet',
-  LARGE_HOLDER = 'Large Holder',
-  CEX = 'CEX Wallet',
-  DEX = 'DEX Pool',
-  UNKNOWN = 'Unknown',
-}
+export const WalletType = {
+  VESTING: 'Vesting Contract',
+  MULTISIG: 'Multisig Wallet',
+  GNOSIS: 'Gnosis Safe',
+  TREASURY: 'Treasury Wallet',
+  LARGE_HOLDER: 'Large Holder',
+  CEX: 'CEX Wallet',
+  DEX: 'DEX Pool',
+  UNKNOWN: 'Unknown',
+} as const;
+export type WalletType = typeof WalletType[keyof typeof WalletType];
 
-export enum RiskLevel {
-  LOW = 'Low',
-  MEDIUM = 'Medium',
-  HIGH = 'High',
-  CRITICAL = 'Critical',
-}
+export const RiskLevel = {
+  LOW: 'Low',
+  MEDIUM: 'Medium',
+  HIGH: 'High',
+  CRITICAL: 'Critical',
+} as const;
+export type RiskLevel = typeof RiskLevel[keyof typeof RiskLevel];
 
-export enum AlertSeverity {
-  LOW = 'Low',
-  MEDIUM = 'Medium',
-  HIGH = 'High',
-  CRITICAL = 'Critical',
-}
+export const AlertSeverity = {
+  LOW: 'Low',
+  MEDIUM: 'Medium',
+  HIGH: 'High',
+  CRITICAL: 'Critical',
+} as const;
+export type AlertSeverity = typeof AlertSeverity[keyof typeof AlertSeverity];
 
-export enum AlertStatus {
-  NEW = 'New',
-  REVIEWED = 'Reviewed',
-  IGNORED = 'Ignored',
-}
+export const AlertStatus = {
+  NEW: 'New',
+  REVIEWED: 'Reviewed',
+  IGNORED: 'Ignored',
+} as const;
+export type AlertStatus = typeof AlertStatus[keyof typeof AlertStatus];
+
+// ... inside Transaction interface ...
+// (Wait, I should replace them one by one if they are scattered, but they are at the top)
 
 export interface Wallet {
   id: string;
+  userId: string;
   address: string;
   label: string;
   walletType: WalletType;
@@ -45,6 +53,7 @@ export interface Wallet {
 
 export interface Transaction {
   id: string;
+  userId: string;
   txHash: string;
   blockNumber: number;
   timestamp: number;
@@ -61,15 +70,17 @@ export interface Transaction {
   walletLabel?: string;
 }
 
-export enum AlertRuleType {
-  BALANCE_ABOVE = 'Balance Above',
-  BALANCE_BELOW = 'Balance Below',
-  LARGE_TRANSFER = 'Large Transfer',
-  HIGH_FREQUENCY = 'High Frequency',
-}
+export const AlertRuleType = {
+  BALANCE_ABOVE: 'Balance Above',
+  BALANCE_BELOW: 'Balance Below',
+  LARGE_TRANSFER: 'Large Transfer',
+  HIGH_FREQUENCY: 'High Frequency',
+} as const;
+export type AlertRuleType = typeof AlertRuleType[keyof typeof AlertRuleType];
 
 export interface AlertRule {
   id: string;
+  userId: string;
   name: string;
   description: string;
   ruleType: AlertRuleType;
@@ -84,6 +95,7 @@ export interface AlertRule {
 
 export interface Alert {
   id: string;
+  userId: string;
   alertType: string;
   severity: AlertSeverity;
   walletAddress: string;
@@ -102,6 +114,7 @@ export interface Alert {
 }
 
 export interface NotificationSettings {
+  userId: string;
   inApp: boolean;
   email: {
     enabled: boolean;

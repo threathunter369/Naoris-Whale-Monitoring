@@ -5,13 +5,14 @@
       "description": "Represents a monitored Ethereum wallet.",
       "type": "object",
       "properties": {
+        "userId": { "type": "string", "description": "ID of the user who owns this record." },
         "address": { "type": "string", "description": "Ethereum address of the wallet." },
         "label": { "type": "string", "description": "User-assigned label for the wallet." },
         "walletType": { "type": "string", "description": "Type of the wallet (e.g., Vesting, Multisig)." },
         "isActive": { "type": "boolean", "description": "Whether the wallet is currently being monitored." },
         "alertsEnabled": { "type": "boolean", "description": "Whether alerts are enabled for this wallet." },
-        "naorisBalance": { "type": "string", "description": "Current NAORIS token balance." },
-        "ethBalance": { "type": "string", "description": "Current ETH balance." },
+        "naorisBalance": { "type": "number", "description": "Current NAORIS token balance." },
+        "ethBalance": { "type": "number", "description": "Current ETH balance." },
         "lastActivityAt": { "type": "number", "description": "Timestamp of the last detected activity." },
         "createdAt": { "type": "number", "description": "Timestamp when the wallet was added." },
         "updatedAt": { "type": "number", "description": "Timestamp of the last update to this record." }
@@ -23,6 +24,7 @@
       "description": "Represents a NAORIS token transfer transaction.",
       "type": "object",
       "properties": {
+        "userId": { "type": "string", "description": "ID of the user who owns this record." },
         "txHash": { "type": "string", "description": "Transaction hash." },
         "blockNumber": { "type": "number", "description": "Block number." },
         "timestamp": { "type": "number", "description": "Transaction timestamp." },
@@ -45,6 +47,7 @@
       "description": "Represents a triggered alert for a risky transaction.",
       "type": "object",
       "properties": {
+        "userId": { "type": "string", "description": "ID of the user who owns this record." },
         "alertType": { "type": "string", "description": "Category of the alert." },
         "severity": { "type": "string", "description": "Severity level (Low/Medium/High/Critical)." },
         "walletAddress": { "type": "string", "description": "Wallet that triggered the alert." },
@@ -63,6 +66,7 @@
       "description": "User settings for notification channels.",
       "type": "object",
       "properties": {
+        "userId": { "type": "string", "description": "ID of the user who owns this record." },
         "inApp": { "type": "boolean" },
         "email": {
           "type": "object",

@@ -1,6 +1,10 @@
 import { initializeApp, getApps, App } from 'firebase-admin/app';
-import { getFirestore, Firestore } from 'firebase-admin/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+import { getFirestore, Firestore, FieldValue } from 'firebase-admin/firestore';
+import fs from 'fs';
+import path from 'path';
+
+const configPath = path.resolve(process.cwd(), 'firebase-applet-config.json');
+const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 
 const projectId = firebaseConfig.projectId;
 const databaseId = firebaseConfig.firestoreDatabaseId;
@@ -23,5 +27,6 @@ export const db: Firestore = (databaseId && databaseId !== '(default)')
   : getFirestore(app);
 
 export const adminDb = db;
+export { FieldValue };
 
 console.log("[Admin SDK] Firestore Admin instance initialized.");

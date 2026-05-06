@@ -94,7 +94,11 @@ export default function Layout() {
     }
   };
 
-  const handleLogout = () => signOut(auth);
+  const handleLogout = () => {
+    signOut(auth);
+    localStorage.clear();
+    sessionStorage.clear();
+  };
 
   if (loading) {
     return (
@@ -183,9 +187,20 @@ export default function Layout() {
                   </div>
 
                   {authError && (
-                    <p className="text-[10px] text-red-500 font-bold uppercase tracking-tight text-left pl-1">
-                      {authError.includes('auth/invalid-credential') ? 'ACCESS DENIED: INVALID CREDENTIALS' : `ERROR: ${authError.toUpperCase()}`}
-                    </p>
+                    <div className="space-y-2">
+                      <p className="text-[10px] text-red-500 font-bold uppercase tracking-tight text-left pl-1">
+                        {authError.includes('auth/invalid-credential') ? 'ACCESS DENIED: INVALID CREDENTIALS' : 
+                         authError.includes('auth/operation-not-allowed') ? 'CONFIGURATION ERROR: ENABLE GOOGLE/EMAIL AUTH IN FIREBASE CONSOLE' :
+                         authError.includes('auth/popup-blocked') ? 'ERROR: POPUP BLOCKED. PLEASE ALLOW POPUPS OR OPEN IN NEW TAB' :
+                         authError.includes('auth/cancelled-popup-request') ? 'ERROR: AUTH CANCELLED. PLEASE TRY AGAIN' :
+                         `ERROR: ${authError.toUpperCase()}`}
+                      </p>
+                      {authError.includes('auth/popup-blocked') && (
+                        <p className="text-[9px] text-gray-400 italic pl-1">
+                          Tip: Click the "Open in new tab" icon in the top right of the preview if popups are continuously blocked.
+                        </p>
+                      )}
+                    </div>
                   )}
 
                   <button 

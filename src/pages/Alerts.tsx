@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType, auth } from '../lib/firebase';
 import { 
   collection, 
   onSnapshot, 
@@ -9,7 +9,8 @@ import {
   doc,
   limit,
   addDoc,
-  deleteDoc
+  deleteDoc,
+  where
 } from 'firebase/firestore';
 import { 
   BellRing, 
@@ -49,12 +50,24 @@ export default function Alerts() {
   const [newRule, setNewRule] = useState(defaultRule);
 
   useEffect(() => {
-    const unsubAlerts = onSnapshot(query(collection(db, 'alerts'), orderBy('createdAt', 'desc'), limit(100)), (snap) => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const unsubAlerts = onSnapshot(query(
+      collection(db, 'alerts'), 
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc'), 
+      limit(100)
+    ), (snap) => {
       const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Alert));
       setAlerts(data);
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'alerts'));
 
-    const unsubRules = onSnapshot(query(collection(db, 'alertRules'), orderBy('createdAt', 'desc')), (snap) => {
+    const unsubRules = onSnapshot(query(
+      collection(db, 'alertRules'), 
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    ), (snap) => {
       const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as AlertRule));
       setRules(data);
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'alertRules'));
@@ -67,8 +80,11 @@ export default function Alerts() {
 
   const createRule = async (e: React.FormEvent) => {
     e.preventDefault();
+    const user = auth.currentUser;
+    if (!user) return;
     try {
       const ruleData = {
+        userId: user.uid,
         ...newRule,
         updatedAt: Date.now(),
         description: `Trigger ${newRule.severity} alert when ${newRule.ruleType} ${newRule.comparison === 'greater_than' ? '>' : '<'} ${newRule.threshold.toLocaleString()}`

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType, auth } from '../lib/firebase';
 import { 
   collection, 
   onSnapshot, 
@@ -7,7 +7,9 @@ import {
   deleteDoc, 
   doc, 
   updateDoc,
-  serverTimestamp 
+  serverTimestamp,
+  query,
+  where
 } from 'firebase/firestore';
 import { 
   Plus, 
@@ -52,7 +54,10 @@ export default function Wallets() {
   });
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'wallets'), (snap) => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const unsub = onSnapshot(query(collection(db, 'wallets'), where('userId', '==', user.uid)), (snap) => {
       const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Wallet));
       setWallets(data);
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'wallets'));
@@ -60,12 +65,15 @@ export default function Wallets() {
   }, []);
 
   const onSubmit = async (data: WalletForm) => {
+    const user = auth.currentUser;
+    if (!user) return;
     try {
       await addDoc(collection(db, 'wallets'), {
+        userId: user.uid,
         ...data,
         isActive: true,
-        naorisBalance: '0',
-        ethBalance: '0',
+        naorisBalance: 0,
+        ethBalance: 0,
         lastActivityAt: null,
         createdAt: Date.now(),
         updatedAt: Date.now()
@@ -96,19 +104,22 @@ export default function Wallets() {
   };
 
   const initializeDefaults = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
     setIsInitializing(true);
     try {
       for (const w of DEFAULT_WALLETS) {
-        // Check if already exists
+        // Check if already exists for this user
         if (!wallets.some(existing => existing.address.toLowerCase() === w.address.toLowerCase())) {
           await addDoc(collection(db, 'wallets'), {
+            userId: user.uid,
             address: w.address,
             label: w.label,
             walletType: w.walletType as WalletType,
             isActive: true,
             alertsEnabled: true,
-            naorisBalance: '0',
-            ethBalance: '0',
+            naorisBalance: 0,
+            ethBalance: 0,
             lastActivityAt: null,
             createdAt: Date.now(),
             updatedAt: Date.now()
