@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { db, handleFirestoreError, OperationType, auth } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import { 
   Bell, 
@@ -37,7 +38,8 @@ const settingsSchema = z.object({
 type SettingsForm = z.infer<typeof settingsSchema>;
 
 export default function Settings() {
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const [settingsLoading, setSettingsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { register, handleSubmit, reset, setValue, watch } = useForm<SettingsForm>({
     resolver: zodResolver(settingsSchema),
@@ -51,9 +53,8 @@ export default function Settings() {
   });
 
   useEffect(() => {
-    const user = auth.currentUser;
     if (!user) {
-      setLoading(false);
+      setSettingsLoading(false);
       return;
     }
 
@@ -61,17 +62,16 @@ export default function Settings() {
       if (snap.exists()) {
         reset(snap.data() as SettingsForm);
       }
-      setLoading(false);
+      setSettingsLoading(false);
     }, (err) => {
       console.error("Settings snapshot error:", err);
       handleFirestoreError(err, OperationType.GET, `settings/${user.uid}`);
-      setLoading(false);
+      setSettingsLoading(false);
     });
     return unsub;
-  }, [reset]);
+  }, [reset, user]);
 
   const onSubmit = async (data: SettingsForm) => {
-    const user = auth.currentUser;
     if (!user) return;
     setIsSaving(true);
     try {
@@ -101,7 +101,7 @@ export default function Settings() {
     }
   };
 
-  if (loading) return (
+  if (settingsLoading) return (
     <div className="flex flex-col items-center justify-center h-96 space-y-4">
       <RefreshCw className="w-12 h-12 animate-spin text-brand-primary" />
       <p className="text-gray-500 font-mono text-xs animate-pulse">RECONNAISSANCE IN PROGRESS...</p>

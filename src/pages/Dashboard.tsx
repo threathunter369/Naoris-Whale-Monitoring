@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { db, handleFirestoreError, OperationType, auth } from '../lib/firebase';
-import { collection, onSnapshot, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { collection, onSnapshot, query, orderBy, limit, where } from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -27,6 +29,8 @@ import { RiskLevel, Transaction, Alert } from '../types';
 import { useMarketData } from '../services/marketData';
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const market = useMarketData();
   const [totalBalance, setTotalBalance] = useState(0);
   const [stats, setStats] = useState({
@@ -40,7 +44,6 @@ export default function Dashboard() {
   const [riskScore, setRiskScore] = useState(850); // Default placeholder
 
   useEffect(() => {
-    const user = auth.currentUser;
     if (!user) return;
 
     // Stats: Wallets
@@ -100,7 +103,7 @@ export default function Dashboard() {
       unsubTxs();
       unsubSync();
     };
-  }, []);
+  }, [user]);
 
   const getRiskColor = (score: number) => {
     if (score >= 900) return 'text-green-500';

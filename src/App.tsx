@@ -4,7 +4,9 @@
  */
 
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 import Layout from './components/Layout';
+// ... existing imports ...
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Wallets from './pages/Wallets';
@@ -33,5 +35,9 @@ const router = createBrowserRouter([
 ]);
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
 }

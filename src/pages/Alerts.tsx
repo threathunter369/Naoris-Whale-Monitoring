@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { db, handleFirestoreError, OperationType, auth } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   collection, 
   onSnapshot, 
@@ -31,6 +32,7 @@ import { cn, formatAddress } from '../lib/utils';
 import { Alert, AlertStatus, AlertSeverity, AlertRule, AlertRuleType } from '../types';
 
 export default function Alerts() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'alerts' | 'rules'>('alerts');
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [rules, setRules] = useState<AlertRule[]>([]);
@@ -50,7 +52,6 @@ export default function Alerts() {
   const [newRule, setNewRule] = useState(defaultRule);
 
   useEffect(() => {
-    const user = auth.currentUser;
     if (!user) return;
 
     const unsubAlerts = onSnapshot(query(
@@ -76,11 +77,10 @@ export default function Alerts() {
       unsubAlerts();
       unsubRules();
     };
-  }, []);
+  }, [user]);
 
   const createRule = async (e: React.FormEvent) => {
     e.preventDefault();
-    const user = auth.currentUser;
     if (!user) return;
     try {
       const ruleData = {

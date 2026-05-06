@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { db, handleFirestoreError, OperationType, auth } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   collection, 
   onSnapshot, 
@@ -40,6 +41,7 @@ const walletSchema = z.object({
 type WalletForm = z.infer<typeof walletSchema>;
 
 export default function Wallets() {
+  const { user } = useAuth();
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,7 +56,6 @@ export default function Wallets() {
   });
 
   useEffect(() => {
-    const user = auth.currentUser;
     if (!user) return;
 
     const unsub = onSnapshot(query(collection(db, 'wallets'), where('userId', '==', user.uid)), (snap) => {
@@ -62,10 +63,9 @@ export default function Wallets() {
       setWallets(data);
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'wallets'));
     return unsub;
-  }, []);
+  }, [user]);
 
   const onSubmit = async (data: WalletForm) => {
-    const user = auth.currentUser;
     if (!user) return;
     try {
       await addDoc(collection(db, 'wallets'), {
@@ -104,7 +104,6 @@ export default function Wallets() {
   };
 
   const initializeDefaults = async () => {
-    const user = auth.currentUser;
     if (!user) return;
     setIsInitializing(true);
     try {

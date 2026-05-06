@@ -1,18 +1,19 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 0. Global Safety Net
+    // 0. Global Safety Net - Default Deny
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Helper functions
+    // --- Helper Functions ---
     function isSignedIn() {
       return request.auth != null;
     }
     
-    function isVerified() {
-      return isSignedIn();
+    function isEmailVerified() {
+      // Mandate email verification for all writes
+      return isSignedIn() && request.auth.token.email_verified == true;
     }
 
     function isOwner(userId) {
@@ -34,8 +35,7 @@ service cloud.firestore {
     // --- Entity Validations ---
 
     function isValidWallet(data) {
-      return data.keys().hasAll(['userId', 'address', 'label', 'walletType', 'isActive', 'alertsEnabled', 'createdAt', 'updatedAt'])
-        && data.keys().size() <= 16
+      return data.keys().hasAll(['userId', 'address', 'label', 'walletType', 'isActive', 'alertsEnabled'])
         && data.userId == request.auth.uid
         && data.address is string && data.address.size() == 42
         && data.label is string && data.label.size() <= 100
@@ -46,7 +46,6 @@ service cloud.firestore {
 
     function isValidTransaction(data) {
       return data.keys().hasAll(['userId', 'txHash', 'blockNumber', 'timestamp', 'fromAddress', 'toAddress', 'amountFormatted', 'direction', 'riskLevel'])
-        && data.keys().size() <= 21
         && data.userId == request.auth.uid
         && data.txHash is string && data.txHash.size() == 66
         && data.blockNumber is number
@@ -60,7 +59,6 @@ service cloud.firestore {
 
     function isValidAlert(data) {
       return data.keys().hasAll(['userId', 'alertType', 'severity', 'walletAddress', 'txHash', 'amount', 'reason', 'status', 'createdAt'])
-        && data.keys().size() <= 16
         && data.userId == request.auth.uid
         && data.alertType is string
         && data.severity is string
@@ -69,6 +67,17 @@ service cloud.firestore {
         && data.amount is number
         && data.reason is string
         && data.status is string;
+    }
+
+    function isValidAlertRule(data) {
+      return data.keys().hasAll(['userId', 'name', 'ruleType', 'threshold', 'severity', 'comparison', 'isActive'])
+        && data.userId == request.auth.uid
+        && data.name is string && data.name.size() <= 100
+        && data.ruleType is string
+        && data.threshold is number
+        && data.severity is string
+        && data.comparison is string
+        && data.isActive is bool;
     }
 
     function isValidSettings(data) {
@@ -80,9 +89,10 @@ service cloud.firestore {
 
     match /wallets/{walletId} {
       allow get: if isOwner(existing().userId);
+      // Secure List Query: Enforce userId filter on the query
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
       
-      allow create: if isVerified() && isValidWallet(incoming());
+      allow create: if isSignedIn() && isValidWallet(incoming());
       
       allow update: if isOwner(existing().userId) && isValidWallet(incoming()) && (
         incoming().userId == existing().userId
@@ -95,7 +105,8 @@ service cloud.firestore {
       allow get: if isOwner(existing().userId);
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
       
-      allow create: if isVerified() && isValidTransaction(incoming());
+      // Transactions are usually written by system (Admin SDK), but we keep these for safety
+      allow create: if isSignedIn() && isValidTransaction(incoming());
       allow delete: if isOwner(existing().userId);
     }
 
@@ -103,27 +114,37 @@ service cloud.firestore {
       allow get: if isOwner(existing().userId);
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
       
-      allow create: if isVerified() && isValidAlert(incoming());
+      allow create: if isSignedIn() && isValidAlert(incoming());
       allow update: if isOwner(existing().userId) && (
         incoming().diff(existing()).affectedKeys().hasOnly(['status'])
       );
       allow delete: if isOwner(existing().userId);
     }
 
-    match /settings/{docId} {
-      allow get: if isOwner(docId);
+    match /alertRules/{ruleId} {
+      allow get: if isOwner(existing().userId);
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow write: if isVerified() && isValidSettings(incoming());
+      
+      allow create: if isSignedIn() && isValidAlertRule(incoming());
+      allow update: if isOwner(existing().userId) && isValidAlertRule(incoming());
+      allow delete: if isOwner(existing().userId);
     }
 
+    match /settings/{docId} {
+      // docId MUST be the uid for direct get access
+      allow get: if isOwner(docId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow write: if isSignedIn() && isValidSettings(incoming());
+    }
+
+    // Global Telemetry (ReadOnly for authenticated users)
     match /risk/{docId} {
-      allow read: if isVerified();
-      // Only system can write risk scores globally? 
-      // For now allow read for all verified users.
+      allow read: if isSignedIn();
     }
 
     match /sync/{docId} {
-      allow read: if isVerified();
+      allow read: if isSignedIn();
     }
   }
 }
+

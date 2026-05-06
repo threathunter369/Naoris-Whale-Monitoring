@@ -16,12 +16,10 @@ import {
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import { auth } from '../lib/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { 
-  onAuthStateChanged, 
   signInWithPopup, 
   GoogleAuthProvider, 
-  signOut, 
-  User as FirebaseUser,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile
@@ -51,20 +49,12 @@ const NavItem = ({ to, icon: Icon, label }: NavItemProps) => (
 );
 
 export default function Layout() {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, logout: handleLogout } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isRegister, setIsRegister] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-
-  useEffect(() => {
-    return onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoading(false);
-    });
-  }, []);
 
   const handleGoogleLogin = async () => {
     setAuthError(null);
@@ -93,12 +83,6 @@ export default function Layout() {
       console.error("Auth failed:", err);
       setAuthError(err.message);
     }
-  };
-
-  const handleLogout = () => {
-    signOut(auth);
-    localStorage.clear();
-    sessionStorage.clear();
   };
 
   if (loading) {

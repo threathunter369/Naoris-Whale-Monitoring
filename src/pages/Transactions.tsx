@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { db, handleFirestoreError, OperationType, auth } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   collection, 
   onSnapshot, 
@@ -21,6 +22,7 @@ import { formatAddress, formatNumber, cn } from '../lib/utils';
 import { Transaction, RiskLevel } from '../types';
 
 export default function Transactions() {
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filter, setFilter] = useState({
     risk: 'All',
@@ -29,7 +31,6 @@ export default function Transactions() {
   });
 
   useEffect(() => {
-    const user = auth.currentUser;
     if (!user) return;
 
     const unsub = onSnapshot(query(
@@ -42,7 +43,7 @@ export default function Transactions() {
       setTransactions(data);
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'transactions'));
     return unsub;
-  }, []);
+  }, [user]);
 
   const filteredTxs = transactions.filter(tx => {
     const matchesRisk = filter.risk === 'All' || tx.riskLevel === filter.risk;
